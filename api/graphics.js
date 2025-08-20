@@ -16,13 +16,13 @@ export default async function handler(req, res) {
 
     if (!headline || !subtitle || !cta) {
       return res.status(400).json({ 
-        error: 'Missing required fields' 
+        error: 'Missing required fields: headline, subtitle, cta' 
       });
     }
 
     const prompt = buildPrompt(headline, subtitle, cta, theme);
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+    const openaiResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -38,21 +38,26 @@ export default async function handler(req, res) {
       }),
     });
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'API error');
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      console.error('OpenAI API Error:', errorText);
+      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
     }
 
+    const data = await openaiResponse.json();
+    
     return res.status(200).json({
       success: true,
       imageUrl: data.data[0].url,
-      prompt: prompt
+      prompt: prompt,
+      inputs: { headline, subtitle, cta, theme }
     });
 
   } catch (error) {
+    console.error('API Error:', error);
     return res.status(500).json({
-      error: 'Generation failed',
+      success: false,
+      error: 'Failed to generate graphic',
       details: error.message
     });
   }
@@ -60,17 +65,25 @@ export default async function handler(req, res) {
 
 function buildPrompt(headline, subtitle, cta, theme) {
   const styles = {
-    success: "luxury gold and blue gradient background, premium 3D aesthetic",
-    automation: "futuristic blue and cyan tech environment, modern 3D design",
-    opportunity: "professional purple and gold business design, executive 3D style",
-    transformation: "energetic blue to gold gradient, motivational 3D elements"
+    success: "luxury gold and blue gradient background, premium 3D aesthetic with professional lighting",
+    automation: "futuristic blue and cyan tech environment, modern 3D design with holographic elements",
+    opportunity: "professional purple and gold business design, executive 3D style with premium materials",
+    transformation: "energetic blue to gold gradient, motivational 3D elements with inspiring atmosphere"
   };
 
   const style = styles[theme] || styles.success;
 
-  return `Professional social media graphic with ${style}. 
-Main text: "${headline}" - bold 3D typography with metallic finish.
-Subtitle: "${subtitle}" - clean white text.
-Button: "${cta}" - prominent gradient button.
-Clean composition, perfect text readability, 1080x1080 format, high-quality 3D rendering.`;
+  return `Create a professional social media graphic with ${style}. 
+
+Main headline text: "${headline}" - bold 3D typography with metallic finish and realistic depth.
+Subtitle text: "${subtitle}" - clean white text with perfect readability.
+Call-to-action button: "${cta}" - prominent gradient button with professional styling.
+
+Design requirements:
+- Clean, minimal composition with strategic white space
+- Perfect text hierarchy and readability 
+- 1080x1080 square format optimized for social media
+- High-quality 3D rendering with cinematic lighting
+- Professional commercial-grade aesthetic
+- No cluttered elements, focus on text clarity and visual impact`;
 }
