@@ -1,0 +1,17 @@
+{
+  "name": "cohtrix-coach-graphics-automation",
+  "version": "1.0.0",
+  "description": "Automated DALL-E graphics for Cohtrix coach recruitment",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build"
+  },
+  "dependencies": {
+    "openai": "^4.20.0",
+    "axios": "^1.6.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
