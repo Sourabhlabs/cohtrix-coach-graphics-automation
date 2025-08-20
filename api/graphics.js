@@ -12,6 +12,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Debug: Log incoming request
+    console.log('Request body:', req.body);
+    
     const { headline, subtitle, cta, theme } = req.body;
 
     if (!headline || !subtitle || !cta) {
@@ -20,7 +23,15 @@ export default async function handler(req, res) {
       });
     }
 
+    // Check if OpenAI API key exists
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        error: 'OpenAI API key not configured'
+      });
+    }
+
     const prompt = buildPrompt(headline, subtitle, cta, theme);
+    console.log('Generated prompt:', prompt);
 
     const openaiResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -38,13 +49,28 @@ export default async function handler(req, res) {
       }),
     });
 
+    console.log('OpenAI Response Status:', openaiResponse.status);
+    
+    const responseText = await openaiResponse.text();
+    console.log('OpenAI Response Text:', responseText);
+
     if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('OpenAI API Error:', errorText);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+      return res.status(500).json({
+        error: 'OpenAI API error',
+        status: openaiResponse.status,
+        details: responseText
+      });
     }
 
-    const data = await openaiResponse.json();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      return res.status(500).json({
+        error: 'Failed to parse OpenAI response',
+        details: responseText
+      });
+    }
     
     return res.status(200).json({
       success: true,
@@ -58,32 +84,21 @@ export default async function handler(req, res) {
     return res.status(500).json({
       success: false,
       error: 'Failed to generate graphic',
-      details: error.message
+      details: error.message,
+      stack: error.stack
     });
   }
 }
 
 function buildPrompt(headline, subtitle, cta, theme) {
   const styles = {
-    success: "luxury gold and blue gradient background, premium 3D aesthetic with professional lighting",
-    automation: "futuristic blue and cyan tech environment, modern 3D design with holographic elements",
-    opportunity: "professional purple and gold business design, executive 3D style with premium materials",
-    transformation: "energetic blue to gold gradient, motivational 3D elements with inspiring atmosphere"
+    success: "luxury gold and blue gradient background, premium 3D aesthetic",
+    automation: "futuristic blue and cyan tech environment, modern 3D design",
+    opportunity: "professional purple and gold business design, executive 3D style",
+    transformation: "energetic blue to gold gradient, motivational 3D elements"
   };
 
   const style = styles[theme] || styles.success;
 
-  return `Create a professional social media graphic with ${style}. 
-
-Main headline text: "${headline}" - bold 3D typography with metallic finish and realistic depth.
-Subtitle text: "${subtitle}" - clean white text with perfect readability.
-Call-to-action button: "${cta}" - prominent gradient button with professional styling.
-
-Design requirements:
-- Clean, minimal composition with strategic white space
-- Perfect text hierarchy and readability 
-- 1080x1080 square format optimized for social media
-- High-quality 3D rendering with cinematic lighting
-- Professional commercial-grade aesthetic
-- No cluttered elements, focus on text clarity and visual impact`;
+  return `Professional social media graphic with ${style}. Main text: "${headline}" - bold 3D typography. Subtitle: "${subtitle}" - clean white text. Button: "${cta}" - gradient button. Clean composition, 1080x1080 format.`;
 }
