@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cohtrix Graphics Generator - Test</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            color: #F59E0B;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #F59E0B;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #F59E0B;
+            color: #1E3A8A;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #D97706;
+        }
+        button:disabled {
+            background: #6B7280;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            text-align: center;
+        }
+        .generated-image {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #FEE2E2;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Cohtrix Coach Graphics Generator</h1>
+        
+        <form id="graphicsForm">
+            <div class="form-group">
+                <label for="headline">Headline (Max 8 words):</label>
+                <input type="text" id="headline" name="headline" placeholder="Transform Lives, Build Wealth" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="subtitle">Subtitle (Max 15 words):</label>
+                <input type="text" id="subtitle" name="subtitle" placeholder="Join 1000+ coaches earning ₹5L+ monthly with AI automation" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="cta">Call to Action (Max 5 words):</label>
+                <input type="text" id="cta" name="cta" placeholder="Join Cohtrix Today" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="theme">Theme:</label>
+                <select id="theme" name="theme" required>
+                    <option value="success">Success Story</option>
+                    <option value="automation">AI Automation</option>
+                    <option value="opportunity">Income Opportunity</option>
+                    <option value="transformation">Coach Transformation</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="generateBtn">🎨 Generate Graphic</button>
+        </form>
+        
+        <div id="loading" class="loading" style="display: none;">
+            <h3>🎨 Creating your graphic...</h3>
+            <p>This may take 10-30 seconds</p>
+        </div>
+        
+        <div id="result" class="result" style="display: none;">
+            <h3>✅ Your Graphic is Ready!</h3>
+            <img id="generatedImage" class="generated-image" alt="Generated graphic">
+            <div style="margin-top: 15px;">
+                <a id="downloadLink" download="cohtrix-graphic.png" style="color: #F59E0B; text-decoration: none; font-weight: bold;">📥 Download Graphic</a>
+            </div>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('graphicsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const generateBtn = document.getElementById('generateBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            
+            // Reset displays
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            error.style.display = 'none';
+            generateBtn.disabled = true;
+            generateBtn.textContent = '🎨 Generating...';
+            
+            // Get form data
+            const formData = {
+                headline: document.getElementById('headline').value,
+                subtitle: document.getElementById('subtitle').value,
+                cta: document.getElementById('cta').value,
+                theme: document.getElementById('theme').value
+            };
+            
+            try {
+                const response = await fetch('/api/generate-graphic', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('generatedImage').src = data.imageUrl;
+                    document.getElementById('downloadLink').href = data.imageUrl;
+                    result.style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'Failed to generate graphic');
+                }
+                
+            } catch (err) {
+                error.textContent = `Error: ${err.message}`;
+                error.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                generateBtn.disabled = false;
+                generateBtn.textContent = '🎨 Generate Graphic';
+            }
+        });
+    </script>
+</body>
+</html>
